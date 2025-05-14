@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  neo4j:
+    image: neo4j:5.19.0-community           # pin a version
+    restart: unless-stopped
+    environment:
+      # auto-generate strong creds from Coolify’s magic vars
+      - NEO4J_AUTH=neo4j/${PASSWORD}
+      # open Neo4j on all interfaces so Traefik can reach it
+      - NEO4J_dbms_default__listen__address=0.0.0.0
+      # advertise public host/ports (helpful for drivers)
+      - NEO4J_server_http_advertised__address=${COOLIFY_FQDN}:7474
+      - NEO4J_server_bolt_advertised__address=${COOLIFY_FQDN}:7687
+      # sensible memory footprint for a 2 GB droplet; tune up later
+      - NEO4J_dbms_memory_heap_initial__size=1G
+      - NEO4J_dbms_memory_heap_max__size=1G
+      - NEO4J_dbms_memory_pagecache_size=512M
+      # optional: install APOC
+      - NEO4J_PLUGINS='["apoc"]'
+    ports:
+      - "7474"          # HTTP (proxied by Traefik)
+      - "7687"          # Bolt (TCP router - Coolify handles it)
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
